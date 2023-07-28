@@ -1,16 +1,55 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 import Spiner from "../../components/Spinner/Spinner";
 import { useNavigate } from "react-router-dom";
-import "./home.css";
+import Alert from "react-bootstrap/Alert";
 import Tables from "../../components/Tables/Tables";
+import {
+  addData,
+  deleteData,
+  updateData,
+} from "../../components/Context/ContextProvider";
+import { userGetFunc, deletefunc } from "../../services/Apis";
+import "./home.css";
+import { toast } from "react-toastify";
 
 const Home = () => {
+  const [userdata, setUserdata] = useState([]);
   const [showspin, setshowspin] = useState(true);
+  const { userAdd, setUserAdd } = useContext(addData);
+
+  const { update, setUpdate } = useContext(updateData);
+
+  const { deletedata, setDeletedata } = useContext(deleteData);
+
+  //get user
+  const userget = async () => {
+    const response = await userGetFunc();
+    console.log(response);
+
+    if (response.status === 200) {
+      setUserdata(response.data);
+    } else {
+      console.log("Error to get user data");
+    }
+  };
+
+  //delete user
+  const deleteUser = async (id) => {
+    const response = await deletefunc(id);
+
+    if (response.status === 200) {
+      userget();
+      setDeletedata(response.data);
+    } else {
+      toast.error("Error while deleting");
+    }
+  };
 
   useEffect(() => {
+    userget();
     setTimeout(() => {
       setshowspin(false);
     }, 1200);
@@ -23,6 +62,30 @@ const Home = () => {
   };
   return (
     <>
+      {userAdd ? (
+        <Alert variant="success" onClose={() => setUserAdd("")} dismissible>
+          {userAdd.fname.toUpperCase()} Successfully Added
+        </Alert>
+      ) : (
+        ""
+      )}
+
+      {update ? (
+        <Alert variant="primary" onClose={() => setUpdate("")} dismissible>
+          {update.fname.toUpperCase()} Successfully Updated
+        </Alert>
+      ) : (
+        ""
+      )}
+
+      {deletedata ? (
+        <Alert variant="danger" onClose={() => setDeletedata("")} dismissible>
+          User Deleted Successfully
+        </Alert>
+      ) : (
+        ""
+      )}
+
       <div className="container">
         <div className="main_div">
           {/* search add buttpn */}
@@ -42,7 +105,7 @@ const Home = () => {
             </div>
             <div className="add_btn">
               <Button variant="primary" onClick={addUser}>
-                <i class="fa-solid fa-plus "></i>&nbsp;Add User
+                <i className="fa-solid fa-plus "></i>&nbsp;Add User
               </Button>
             </div>
           </div>
@@ -84,7 +147,7 @@ const Home = () => {
               <h3>Sort By Value</h3>
               <Dropdown className="text-center">
                 <Dropdown.Toggle className="dropdown_btn" id="dropdown-basic">
-                  <i class="fa-solid fa-sort"></i>
+                  <i className="fa-solid fa-sort"></i>
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
@@ -123,7 +186,11 @@ const Home = () => {
             </div>
           </div>
         </div>
-        {showspin ? <Spiner /> : <Tables />}
+        {showspin ? (
+          <Spiner />
+        ) : (
+          <Tables userdata={userdata} deleteUser={deleteUser} />
+        )}
       </div>
     </>
   );

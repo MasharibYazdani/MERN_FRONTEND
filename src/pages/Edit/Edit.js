@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "./edit.css";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
@@ -8,6 +8,10 @@ import Spiner from "../../components/Spinner/Spinner";
 import Select from "react-select";
 import { toast, ToastContainer } from "react-toastify"; //For validation of form input data
 import "react-toastify/dist/ReactToastify.css";
+import { editfunc, singleUsergetfunc } from "../../services/Apis";
+import { useNavigate, useParams } from "react-router-dom";
+import { BASE_URL } from "../../services/helper";
+import { updateData } from "../../components/Context/ContextProvider";
 
 const Edit = () => {
   const [inputdata, setinputdata] = useState({
@@ -22,11 +26,20 @@ const Edit = () => {
   const [status, setstatus] = useState("Active");
   const [image, setimage] = useState("");
 
+  //To set image during updation of profile
+  const [imgdata, setImgdata] = useState("");
+
   //To preview profile picture
   const [preview, setpreview] = useState("");
 
   //For spinner
   const [showspin, setshowspin] = useState(true);
+
+  const { id } = useParams(); //Getting id of particular user
+
+  const navigate = useNavigate();
+
+  const { update, setUpdate } = useContext(updateData);
 
   //status options
   const options = [
@@ -50,9 +63,25 @@ const Edit = () => {
     setimage(e.target.files[0]);
   };
 
+  const userProfileGet = async () => {
+    const response = await singleUsergetfunc(id);
+    if (response.status === 200) {
+      setinputdata(response.data);
+      setstatus(response.data.status);
+      setImgdata(response.data.profile);
+    } else {
+      console.log("Error while getting single user");
+    }
+  };
+
+  useEffect(() => {
+    userProfileGet();
+  }, [id]);
+
   //set preview of profile picture also check condition in img tag
   useEffect(() => {
     if (image) {
+      setImgdata("");
       setpreview(URL.createObjectURL(image));
     }
 
@@ -62,7 +91,7 @@ const Edit = () => {
   }, [image]);
 
   //submit the form without loading the page
-  const submitUserData = (e) => {
+  const submitUserData = async (e) => {
     e.preventDefault();
 
     const { fname, lname, email, mobile, gender, location } = inputdata;
@@ -83,12 +112,30 @@ const Edit = () => {
       toast.error("Please enter a valid Mobile no");
     } else if (gender === "") {
       toast.error("Gender is Required");
-    } else if (image === "") {
-      toast.error("Image is Required");
     } else if (location === "") {
       toast.error("Location is Required");
     } else {
-      toast.success("Registration Successful");
+      //Sending data to the backend
+      const data = new FormData();
+      data.append("fname", fname);
+      data.append("lname", lname);
+      data.append("email", email);
+      data.append("mobile", mobile);
+      data.append("location", location);
+      data.append("gender", gender);
+      data.append("status", status);
+      data.append("user_profile", image || imgdata);
+
+      const config = {
+        "Content-Typer": "multipart/form-data",
+      };
+
+      const response = await editfunc(id, data, config);
+
+      if (response.status === 200) {
+        setUpdate(response.data);
+        navigate("/");
+      }
     }
   };
 
@@ -101,7 +148,10 @@ const Edit = () => {
           <h2 className="text-center mt-1">Update Your Details</h2>
           <Card className="shadow mt-3 p-3">
             <div className="profile_div text-center">
-              <img src={preview ? preview : "/man.png"} alt="img" />
+              <img
+                src={image ? preview : `${BASE_URL}/uploads/${imgdata}`}
+                alt="img"
+              />
             </div>
             <Form>
               <Row>
@@ -171,6 +221,7 @@ const Edit = () => {
                     label={"Male"}
                     name="gender"
                     value={"Male"}
+                    checked={inputdata.gender === "Male" ? true : false}
                     onChange={setInputValue}
                   />
 
@@ -179,6 +230,7 @@ const Edit = () => {
                     label={"Female"}
                     name="gender"
                     value={"Female"}
+                    checked={inputdata.gender === "Female" ? true : false}
                     onChange={setInputValue}
                   />
                 </Form.Group>
@@ -190,7 +242,7 @@ const Edit = () => {
                   <Form.Label>Select Your Status</Form.Label>
                   <Select
                     options={options}
-                    value={status}
+                    defaultValue={status}
                     onChange={setStatusValue}
                   />
                 </Form.Group>
