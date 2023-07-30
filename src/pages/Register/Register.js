@@ -37,7 +37,7 @@ const Register = () => {
   //status options
   const options = [
     { value: "Active", label: "Active" },
-    { value: "Inactive", label: "Inactive" },
+    { value: "Inactive", label: "InActive" },
   ];
 
   //set input values

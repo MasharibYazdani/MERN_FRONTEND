@@ -11,7 +11,7 @@ import {
   deleteData,
   updateData,
 } from "../../components/Context/ContextProvider";
-import { userGetFunc, deletefunc } from "../../services/Apis";
+import { userGetFunc, deletefunc, exporttocsvfunc } from "../../services/Apis";
 import "./home.css";
 import { toast } from "react-toastify";
 
@@ -24,13 +24,25 @@ const Home = () => {
 
   const { deletedata, setDeletedata } = useContext(deleteData);
 
+  const [search, setSearch] = useState("");
+
+  const [gender, setGender] = useState("All");
+
+  const [status, setStatus] = useState("All");
+
+  const [sort, setSort] = useState("new");
+
+  const [page, setPage] = useState(1);
+
+  const [pageCount, setPageCount] = useState(0);
+
   //get user
   const userget = async () => {
-    const response = await userGetFunc();
-    console.log(response);
+    const response = await userGetFunc(search, gender, status, sort, page);
 
     if (response.status === 200) {
-      setUserdata(response.data);
+      setUserdata(response.data.userdata);
+      setPageCount(response.data.Pagination.pageCount);
     } else {
       console.log("Error to get user data");
     }
@@ -48,12 +60,45 @@ const Home = () => {
     }
   };
 
+  //Export user to csv
+
+  const exportuser = async () => {
+    const response = await exporttocsvfunc();
+
+    if (response.status === 200) {
+      window.open(response.data.downloadUrl, "blank");
+    } else {
+      toast.error("Error While Downloading !");
+    }
+  };
+
+  //Pagination
+
+  //handle previous button
+
+  const handlePrev = () => {
+    setPage(() => {
+      if (page === 1) return page;
+
+      return page - 1;
+    });
+  };
+
+  //handle next button
+  const handleNext = () => {
+    setPage(() => {
+      if (page === pageCount) return page;
+
+      return page + 1;
+    });
+  };
+
   useEffect(() => {
     userget();
     setTimeout(() => {
       setshowspin(false);
     }, 1200);
-  }, []);
+  }, [search, gender, status, sort, page]);
 
   const navigate = useNavigate();
 
@@ -97,6 +142,7 @@ const Home = () => {
                   placeholder="Search"
                   className="me-2"
                   aria-label="Search"
+                  onChange={(e) => setSearch(e.target.value)}
                 />
                 <Button className="search_btn" variant="success">
                   Search
@@ -112,7 +158,9 @@ const Home = () => {
           {/* export,gender,csv */}
           <div className="add_filter mt-5 d-flex justify-content-between">
             <div className="export_csv">
-              <Button className="export_btn">Export To CSV</Button>
+              <Button className="export_btn" onClick={exportuser}>
+                Export To CSV
+              </Button>
             </div>
             <div className="filer_gender">
               <div className="filter">
@@ -124,6 +172,7 @@ const Home = () => {
                     label={"All"}
                     name="gender"
                     value={"All"}
+                    onChange={(e) => setGender(e.target.value)}
                     defaultChecked
                   />
                   <Form.Check
@@ -131,12 +180,14 @@ const Home = () => {
                     label={"Male"}
                     name="gender"
                     value={"Male"}
+                    onChange={(e) => setGender(e.target.value)}
                   />
                   <Form.Check // prettier-ignore
                     type={"radio"}
                     label={"Female"}
                     name="gender"
                     value={"Female"}
+                    onChange={(e) => setGender(e.target.value)}
                   />
                 </div>
               </div>
@@ -151,8 +202,12 @@ const Home = () => {
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
-                  <Dropdown.Item>New</Dropdown.Item>
-                  <Dropdown.Item>Old</Dropdown.Item>
+                  <Dropdown.Item onClick={() => setSort("new")}>
+                    New
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => setSort("old")}>
+                    Old
+                  </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
             </div>
@@ -168,18 +223,21 @@ const Home = () => {
                     name="status"
                     value={"All"}
                     defaultChecked
+                    onChange={(e) => setStatus(e.target.value)}
                   />
                   <Form.Check
                     type={"radio"}
                     label={"Active"}
                     name="status"
                     value={"Active"}
+                    onChange={(e) => setStatus(e.target.value)}
                   />
                   <Form.Check // prettier-ignore
                     type={"radio"}
                     label={"InActive"}
                     name="status"
                     value={"InActive"}
+                    onChange={(e) => setStatus(e.target.value)}
                   />
                 </div>
               </div>
@@ -189,7 +247,16 @@ const Home = () => {
         {showspin ? (
           <Spiner />
         ) : (
-          <Tables userdata={userdata} deleteUser={deleteUser} />
+          <Tables
+            userdata={userdata}
+            deleteUser={deleteUser}
+            userget={userget}
+            handlePrev={handlePrev}
+            handleNext={handleNext}
+            page={page}
+            pageCount={pageCount}
+            setPage={setPage}
+          />
         )}
       </div>
     </>

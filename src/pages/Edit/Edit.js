@@ -44,7 +44,7 @@ const Edit = () => {
   //status options
   const options = [
     { value: "Active", label: "Active" },
-    { value: "Inactive", label: "Inactive" },
+    { value: "InActive", label: "InActive" },
   ];
 
   //set input values

@@ -6,9 +6,31 @@ import Dropdown from "react-bootstrap/Dropdown";
 import Badge from "react-bootstrap/Badge";
 import { BASE_URL } from "../../services/helper";
 import { NavLink } from "react-router-dom";
+import { statusChangefunc } from "../../services/Apis";
+import { toast, ToastContainer } from "react-toastify";
 import "./table.css";
+import Paginations from "../Pagination/Paginations";
 
-const Tables = ({ userdata, deleteUser }) => {
+const Tables = ({
+  userdata,
+  deleteUser,
+  userget,
+  handlePrev,
+  handleNext,
+  page,
+  pageCount,
+  setPage,
+}) => {
+  const handleChange = async (id, status) => {
+    const response = await statusChangefunc(id, status);
+    if (response.status === 200) {
+      userget();
+      toast.success("Status Updated");
+    } else {
+      toast.error("Error while updating status");
+    }
+  };
+
   return (
     <div className="container">
       <Row>
@@ -32,7 +54,8 @@ const Tables = ({ userdata, deleteUser }) => {
                     return (
                       <>
                         <tr>
-                          <td>{index + 1}</td>
+                          {/* 4 is for item per page */}
+                          <td>{index + 1 + (page - 1) * 4}</td>
                           <td>{element.fname + " " + element.lname}</td>
                           <td>{element.email}</td>
                           <td>
@@ -60,8 +83,20 @@ const Tables = ({ userdata, deleteUser }) => {
                               </Dropdown.Toggle>
 
                               <Dropdown.Menu>
-                                <Dropdown.Item>Active</Dropdown.Item>
-                                <Dropdown.Item>InActive</Dropdown.Item>
+                                <Dropdown.Item
+                                  onClick={() =>
+                                    handleChange(element._id, "Active")
+                                  }
+                                >
+                                  Active
+                                </Dropdown.Item>
+                                <Dropdown.Item
+                                  onClick={() =>
+                                    handleChange(element._id, "InActive")
+                                  }
+                                >
+                                  InActive
+                                </Dropdown.Item>
                               </Dropdown.Menu>
                             </Dropdown>
                           </td>
@@ -133,9 +168,17 @@ const Tables = ({ userdata, deleteUser }) => {
                 )}
               </tbody>
             </Table>
+            <Paginations
+              handlePrev={handlePrev}
+              handleNext={handleNext}
+              page={page}
+              pageCount={pageCount}
+              setPage={setPage}
+            />
           </Card>
         </div>
       </Row>
+      <ToastContainer />
     </div>
   );
 };
